@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+    
+    <!-- jquery -->
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    </head>
+
+    <!-- DataTables -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-buttons/2.0.1/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-/bQdsTh/da6pkI1MST/rWKFNjaCP5gBSY4sEBT38Q/9RBh9AH40zEOg7Hlq2THRZ" crossorigin="anonymous"></script>
+    
+
+    <title>Gas MBAL</title>
+  </head>
+  <body>
+    <h1>Welcome to Gas MBAL</h1>
+    <p>
+        by James B. 
+    </p>
+    <img src="./assets/reservoir.png" alt="" style="width:500px;height:200px;">
+    <p>
+       Use reservoir pressure and production data to estimate OGIP
+    </p>
+
+    <form>
+        <div class="form-group">
+          <label for="componentDescription">Field Description</label>
+          <input type="text" class="form-control" id="componentDescription"  placeholder="B Field">
+          <small id="componentHelp" class="form-text text-muted">Enter a simple descriptor for your field</small>
+          <br>
+          <label for="Temp">Reservoir Temperature (R)</label>
+          <input type="text" class="form-control" id="Temp" placeholder="343">
+          <br>
+          <label for="Temp">Reservoir Fluid Gravity</label>
+          <input type="text" class="form-control" id="Grav" placeholder="0.66">
+          <br>
+        </div>
+        <button type="submit" class="btn btn-primary" id ="submit-calc">Run Reservoir Stats</button>
+        <br>
+
+        <p>Paste reservoir data from excel here:</p>  
+        <textarea name="excel_data" style="width:250px;height:150px;"></textarea><br>
+        <input type="button" onclick="javascript:generateTable()" value="Generate Data Table"/>
+        <br><br>
+            <p>Table data will appear below</p>
+        <hr>
+        <table id="excel_table" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Pressure(psia)</th>
+                    <th>Production (mmscf)</th>
+                </tr>
+            </thead>       
+        </table>
+          <br>
+          <br>
+      </form>
+
+<script>
+        function generateTable() {
+            var data = $('textarea[name=excel_data]').val();
+            var rows = data.split("\n");
+        
+            for(var y in rows) {
+                var cells = rows[y].split("\t");
+                var row = $('<tr />');
+                for(var x in cells) {
+                    row.append('<td>'+cells[x]+'</td>');
+                }
+                $('#excel_table').append(row);
+            }
+            
+        }
+</script>
+
+
+<script type="text/javascript">      
+    function table2json(){
+        var $table = $("#excel_table"),
+            rows = [],
+            header = [];
+
+        $table.find("thead th").each(function () {
+            header.push($(this).html());
+        });
+
+        $table.find("tr").each(function () {
+            var row = {};
+
+            $(this).find("td").each(function (i) {
+                var key = header[i],
+                    value = $(this).html();
+
+                row[key] = value;
+            });
+            rows.push(row);
+        });
+        return rows
+    }
+    
+</script>
+
+
+
+
+<script type="text/javascript">      
+    $(document).ready(function() {                      
+    $("#submit-calc").click(function(e) {                 
+        e.preventDefault();                          
+        var tbl_data_json = table2json()
+        console.log(tbl_data_json)
+        resTemp = parseFloat($("#Temp").val())
+        resGrav =  parseFloat($("#Grav").val())
+        $.ajax({                     
+                    type: "POST",                     
+                    url: ' https://o03x5atg21.execute-api.us-east-1.amazonaws.com/default/gas_MBAL_calculations',      
+                    data: JSON.stringify({
+                        "resTemp" : resTemp,
+                        "resGrav" : resGrav,
+                        "resData" : tbl_data_json 
+                    }),
+
+                })
+        })
+    })
+</script>
+
+
+
+</body>
+</html>
